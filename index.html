@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Chatbot AI Sức Khỏe</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+}
+
+/* Container */
+.chat-container {
+    width: 420px;
+    height: 650px;
+    margin: 30px auto;
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    background: rgba(255,255,255,0.9);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+/* Header */
+.header {
+    background: linear-gradient(45deg, #0084ff, #00c6ff);
+    color: white;
+    padding: 15px;
+    text-align: center;
+    font-weight: bold;
+    position: relative;
+}
+
+/* Dark mode button */
+.toggle {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    cursor: pointer;
+}
+
+/* Chat */
+.chat-box {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Row */
+.row {
+    display: flex;
+    margin: 6px 0;
+    align-items: flex-end;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {opacity: 0; transform: translateY(10px);}
+    to {opacity: 1;}
+}
+
+/* User / Bot */
+.row.user { justify-content: flex-end; }
+.row.bot { justify-content: flex-start; }
+
+/* Avatar */
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin: 0 5px;
+}
+
+/* Bubble */
+.bubble {
+    padding: 10px 15px;
+    border-radius: 20px;
+    max-width: 70%;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* User */
+.user .bubble {
+    background: linear-gradient(45deg, #0084ff, #00c6ff);
+    color: white;
+    border-bottom-right-radius: 5px;
+}
+
+/* Bot */
+.bot .bubble {
+    background: #e4e6eb;
+    border-bottom-left-radius: 5px;
+}
+
+/* Time */
+.time {
+    font-size: 10px;
+    color: gray;
+    margin: 2px 10px;
+}
+
+/* Input */
+.input-box {
+    display: flex;
+    border-top: 1px solid #ddd;
+}
+
+.input-box input {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    outline: none;
+}
+
+.input-box button {
+    background: #0084ff;
+    color: white;
+    border: none;
+    padding: 0 20px;
+    cursor: pointer;
+}
+
+/* Typing dots */
+.typing-dots span {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin: 0 2px;
+    background: gray;
+    border-radius: 50%;
+    animation: blink 1.4s infinite both;
+}
+
+.typing-dots span:nth-child(2) { animation-delay: .2s; }
+.typing-dots span:nth-child(3) { animation-delay: .4s; }
+
+@keyframes blink {
+    0%, 80%, 100% {opacity: 0;}
+    40% {opacity: 1;}
+}
+
+/* Dark mode */
+.dark {
+    background: #1e1e1e !important;
+    color: white;
+}
+
+.dark .chat-container {
+    background: #2c2c2c;
+}
+
+.dark .bot .bubble {
+    background: #444;
+}
+</style>
+</head>
+
+<body>
+
+<div class="chat-container">
+    <div class="header">
+        🤖 Chatbot Sức Khỏe
+        <span class="toggle" onclick="toggleDark()">🌙</span>
+    </div>
+
+    <div id="chat-box" class="chat-box"></div>
+
+    <div class="input-box">
+        <input id="user-input" placeholder="Nhập triệu chứng..." onkeypress="enterSend(event)">
+        <button onclick="sendMessage()">➤</button>
+    </div>
+</div>
+
+<script>
+let sending = false;
+
+// thời gian
+function getTime(){
+    let d = new Date();
+    return d.getHours() + ":" + ("0"+d.getMinutes()).slice(-2);
+}
+
+// dark mode
+function toggleDark(){
+    document.body.classList.toggle("dark");
+}
+
+// enter
+function enterSend(e){
+    if(e.key === "Enter") sendMessage();
+}
+
+// welcome
+window.onload = function(){
+    addBot("Chào bạn 👋<br>Tôi là chatbot tư vấn sức khỏe.<br>Bạn đang gặp triệu chứng gì?");
+}
+
+// user
+function addUser(text){
+    let row = document.createElement("div");
+    row.className = "row user";
+
+    row.innerHTML = `
+        <div>
+            <div class="bubble">${text}</div>
+            <div class="time">${getTime()}</div>
+        </div>
+        <img class="avatar" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">
+    `;
+
+    chatBox.appendChild(row);
+    scroll();
+}
+
+// bot
+function addBot(text){
+    let row = document.createElement("div");
+    row.className = "row bot";
+
+    row.innerHTML = `
+        <img class="avatar" src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png">
+        <div>
+            <div class="bubble">${text}</div>
+            <div class="time">${getTime()}</div>
+        </div>
+    `;
+
+    chatBox.appendChild(row);
+    scroll();
+}
+
+// scroll
+function scroll(){
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+const chatBox = document.getElementById("chat-box");
+
+// send
+function sendMessage(){
+    if(sending) return;
+
+    let input = document.getElementById("user-input");
+    let text = input.value.trim();
+    if(text === "") return;
+
+    sending = true;
+
+    addUser(text);
+    input.value = "";
+
+    let typing = document.createElement("div");
+    typing.className = "row bot";
+    typing.innerHTML = `
+        <img class="avatar" src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png">
+        <div class="bubble typing-dots">
+            <span></span><span></span><span></span>
+        </div>
+    `;
+    chatBox.appendChild(typing);
+    scroll();
+
+    fetch("/chat", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({message: text})
+    })
+    .then(res => res.json())
+    .then(data => {
+        typing.remove();
+        let reply = data.reply.replace(/\n/g, "<br>");
+        setTimeout(()=>{
+            addBot(reply);
+            sending = false;
+        }, 500);
+    })
+    .catch(()=>{
+        typing.remove();
+        addBot("⚠️ Lỗi server!");
+        sending = false;
+    });
+}
+</script>
+
+</body>
+</html>
